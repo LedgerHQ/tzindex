@@ -232,6 +232,7 @@ func (t ExplorerOp) RegisterDirectRoutes(r *mux.Router) error {
 }
 
 func (t ExplorerOp) RegisterRoutes(r *mux.Router) error {
+	r.HandleFunc("/ledger_delegation", C(ReadLedgerDelegation)).Methods("GET").Name("op")
 	r.HandleFunc("/{ident}", C(ReadOp)).Methods("GET").Name("op")
 	return nil
 
@@ -271,6 +272,42 @@ func ReadOp(ctx *ApiContext) (interface{}, int) {
 			params = ctx.Crawler.ParamsByHeight(v.Height)
 		}
 		resp = append(resp, NewExplorerOp(ctx, v, nil, params))
+	}
+	return resp, http.StatusOK
+}
+
+type LedgerDelegationListRequest struct {
+	Before  time.Time `schema:"before"`
+	After time.Time `schema:"after"`
+}
+
+func ReadLedgerDelegation(ctx *ApiContext) (interface{}, int) {
+	args := &LedgerDelegationListRequest{
+		Before: time.Now(),
+		After: time.Now().AddDate(0, 0, -1),
+	}
+	ctx.ParseRequestArgs(args)
+
+	ops, err := ctx.Indexer.LookupDelegation(ctx, args.After, args.Before)
+	if err != nil {
+		switch err {
+		case index.ErrNoOpEntry:
+			panic(ENotFound(EC_RESOURCE_NOTFOUND, "no such operation", err))
+		default:
+			panic(EInternal(EC_DATABASE, err.Error(), nil))
+		}
+	}
+	resp := make(ExplorerOpList, 0)
+	var params *chain.Params
+	for _, v := range ops {
+		if params == nil {
+			params = ctx.Crawler.ParamsByHeight(v.Height)
+		}
+		if v.GasLimit%1000 == ctx.Cfg.Ledger.DelegationGasLimit {
+			resp = append(resp, NewExplorerOp(ctx, v, nil, params))
+		} else {
+			v.Free()
+		}
 	}
 	return resp, http.StatusOK
 }

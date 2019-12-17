@@ -809,6 +809,50 @@ func (m *Indexer) LookupOp(ctx context.Context, ophash string) ([]*model.Op, err
 	return ops, nil
 }
 
+func (m *Indexer) LookupDelegation(ctx context.Context, after, before time.Time) ([]*model.Op, error) {
+	table, err := m.Table(index.OpTableKey)
+	if err != nil {
+		return nil, err
+	}
+	q := pack.Query{
+		Name: "api.lookup_ledger_ops",
+		Conditions: pack.ConditionList{
+			pack.Condition{
+			Field: table.Fields().Find("t"), // filter by type
+			Mode: pack.FilterModeEqual,
+				Value: int64(chain.OpTypeDelegation),
+			},
+			pack.Condition{
+			Field: table.Fields().Find("T"), // filter by timestamp
+			Mode: pack.FilterModeGte,
+			Value: after,
+			},
+			pack.Condition{
+			Field: table.Fields().Find("T"), // filter by timestamp
+			Mode: pack.FilterModeLte,
+			Value: before,
+			},
+		},
+	}
+	ops := make([]*model.Op, 0)
+	err = table.Stream(ctx, q, func(r pack.Row) error {
+		op := model.AllocOp()
+		if err := r.Decode(op); err != nil {
+			op.Free()
+			return err
+		}
+		ops = append(ops, op)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(ops) == 0 {
+		return nil, index.ErrNoOpEntry
+	}
+	return ops, nil
+}
+
 func (m *Indexer) FindActivatedAccount(ctx context.Context, addr chain.Address) (*model.Account, error) {
 	table, err := m.Table(index.OpTableKey)
 	if err != nil {
