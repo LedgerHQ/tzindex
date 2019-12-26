@@ -15,10 +15,11 @@ import (
 )
 
 type Config struct {
-	Crawler *etl.Crawler
-	Indexer *etl.Indexer
-	Client  *rpc.Client
-	Http    HttpConfig
+	Crawler  *etl.Crawler
+	Indexer  *etl.Indexer
+	Client   *rpc.Client
+	Http     HttpConfig
+	Ledger   LedgerConfig
 }
 
 func (c Config) ClampList(count uint) uint {
@@ -200,4 +201,15 @@ func (cfg *HttpConfig) Check() error {
 	}
 
 	return nil
+}
+
+type LedgerConfig struct {
+	// The special gas limit marker (the last three number) in the delegation ops initilized Ledger Live
+	DelegationGasLimit int64 `json:"delegation_gas_limit"`
+}
+
+func NewLedgerConfig() LedgerConfig {
+	return LedgerConfig{
+		DelegationGasLimit: 136,
+	}
 }
