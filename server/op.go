@@ -331,7 +331,7 @@ func ReadLedgerDelegation(ctx *ApiContext) (interface{}, int) {
 			params = ctx.Crawler.ParamsByHeight(v.Height)
 		}
 		if v.GasLimit%1000 == ctx.Cfg.Ledger.DelegationGasLimit {
-			resp = append(resp, NewExplorerOp(ctx, v, nil, params))
+			resp = append(resp, NewExplorerOp(ctx, v, nil, nil, params, nil))
 		} else {
 			v.Free()
 		}
