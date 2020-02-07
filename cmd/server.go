@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package cmd
 
@@ -28,6 +28,7 @@ var (
 	unsafe  bool
 	norpc   bool
 	noapi   bool
+	cors    bool
 	stop    int64
 )
 
@@ -40,6 +41,7 @@ func init() {
 	runCmd.Flags().BoolVar(&noindex, "noindex", false, "disable indexing")
 	runCmd.Flags().BoolVar(&unsafe, "unsafe", false, "disable fsync for fast ingest (DANGEROUS! data will be lost on crashes)")
 	runCmd.Flags().Int64Var(&stop, "stop", 0, "stop indexing after `height`")
+	runCmd.Flags().BoolVar(&cors, "enable-cors", false, "enable API CORS support")
 
 	rootCmd.AddCommand(runCmd)
 }
@@ -70,6 +72,17 @@ func runServer(args []string) error {
 	log.Infof("Using %s database %s", engine, pathname)
 	if unsafe {
 		log.Warnf("Enabled NOSYNC mode. Database will not be safe on crashes!")
+	}
+
+	// make sure paths exist
+	if err := os.MkdirAll(pathname, 0700); err != nil {
+		return err
+	}
+
+	if snapPath := config.GetString("crawler.snapshot_path"); snapPath != "" {
+		if err := os.MkdirAll(snapPath, 0700); err != nil {
+			return err
+		}
 	}
 
 	// open shared state database
@@ -110,6 +123,7 @@ func runServer(args []string) error {
 			index.NewSnapshotIndex(tableOptions("snapshot")),
 			index.NewIncomeIndex(tableOptions("income")),
 			index.NewGovIndex(tableOptions("gov")),
+			index.NewBigMapIndex(tableOptions("bigmap"), indexOptions("bigmap")),
 		},
 	})
 	defer indexer.Close()
@@ -162,7 +176,7 @@ func runServer(args []string) error {
 				MaxListCount:        config.GetUint("server.max_list_count"),
 				DefaultExploreCount: config.GetUint("server.default_explore_count"),
 				MaxExploreCount:     config.GetUint("server.max_explore_count"),
-				CorsEnable:          config.GetBool("server.cors_enable"),
+				CorsEnable:          cors || config.GetBool("server.cors_enable"),
 				CorsOrigin:          config.GetString("server.cors_origin"),
 				CorsAllowHeaders:    config.GetString("server.cors_allow_headers"),
 				CorsExposeHeaders:   config.GetString("server.cors_expose_headers"),

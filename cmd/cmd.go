@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package cmd
 
@@ -104,7 +104,7 @@ func initConfig() {
 		}
 		log.Infof("Using configuration file %s", realconf)
 	} else {
-		log.Warnf("Missing config file, using default values.")
+		log.Warn("Missing config file, using default values.")
 	}
 	initLogging()
 
@@ -131,7 +131,7 @@ func initConfig() {
 		maxcpu = runtime.NumCPU()
 	}
 	log.Infof("%s tzindex %s -- %s", ORG_NAME, VERSION, GITCOMMIT)
-	log.Infof("(c) Copyright 2018-2019 -- %s", COMPANY_NAME)
+	log.Infof("(c) Copyright 2018-2020 -- %s", COMPANY_NAME)
 	log.Infof("Starting %s on %d cores", UserAgent, maxcpu)
 	log.Infof("Go version %s", runtime.Version())
 	runtime.GOMAXPROCS(maxcpu)

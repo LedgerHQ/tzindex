@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package cmd
 
@@ -94,6 +94,7 @@ func openReadOnlyBlockchain() (*etl.Crawler, error) {
 			index.NewSnapshotIndex(tableOptions("snapshot")),
 			index.NewIncomeIndex(tableOptions("income")),
 			index.NewGovIndex(tableOptions("gov")),
+			index.NewBigMapIndex(tableOptions("bigmap"), indexOptions("bigmap")),
 		},
 	})
 
@@ -138,6 +139,7 @@ func openReadWriteBlockchain() (*etl.Crawler, error) {
 			index.NewSnapshotIndex(tableOptions("snapshot")),
 			index.NewIncomeIndex(tableOptions("income")),
 			index.NewGovIndex(tableOptions("gov")),
+			index.NewBigMapIndex(tableOptions("bigmap"), indexOptions("bigmap")),
 		},
 	})
 
@@ -217,13 +219,17 @@ func newRPCClient() (*rpc.Client, error) {
 		return nil, fmt.Errorf("rpc client: %v", err)
 	}
 	usetls := !config.GetBool("rpc.disable_tls")
-	baseurl := net.JoinHostPort(config.GetString("rpc.host"), config.GetString("rpc.port"))
+	host, port := config.GetString("rpc.host"), config.GetString("rpc.port")
+	baseurl := host
+	if port != "" {
+		baseurl = net.JoinHostPort(host, port)
+	}
 	if usetls {
 		baseurl = "https://" + baseurl
 	} else {
 		baseurl = "http://" + baseurl
 	}
-	rpcclient, err := rpc.NewClient(c, baseurl)
+	rpcclient, err := rpc.NewClient(c, baseurl+"/"+config.GetString("rpc.path"))
 	if err != nil {
 		return nil, fmt.Errorf("rpc client: %v", err)
 	}
@@ -234,9 +240,16 @@ func newRPCClient() (*rpc.Client, error) {
 func parseRPCFlags() error {
 	// overwrite config from flags
 	if rpcurl != "" {
-		u, err := url.Parse(rpcurl)
+		ux := rpcurl
+		if !strings.HasPrefix(ux, "http") {
+			ux = "http://" + ux
+		}
+		u, err := url.Parse(ux)
 		if err != nil {
-			return fmt.Errorf("invalid rpc url: %v", err)
+			return fmt.Errorf("invalid rpc url '%s': %v", rpcurl, err)
+		}
+		if u.Scheme == "" || u.Host == "" {
+			return fmt.Errorf("invalid rpc url '%s'", rpcurl)
 		}
 		fields := strings.Split(u.Host, ":")
 		if len(fields[0]) > 0 {
@@ -244,8 +257,15 @@ func parseRPCFlags() error {
 		}
 		if len(fields) > 1 && len(fields[1]) > 0 {
 			config.Set("rpc.port", fields[1])
+		} else {
+			config.Set("rpc.port", "")
 		}
 		config.Set("rpc.disable_tls", u.Scheme != "https")
+		path := strings.TrimPrefix(u.Path, "/")
+		if len(path) > 0 && !strings.HasSuffix(path, "/") {
+			path = path + "/"
+		}
+		config.Set("rpc.path", path)
 	}
 	if rpcuser != "" {
 		config.Set("rpc.user", rpcuser)

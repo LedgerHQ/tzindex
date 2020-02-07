@@ -1,5 +1,58 @@
 # Changelog
 
+## v5.3.3
+
+- changed copyright owner to Blockwatch Data Inc.
+
+## v5.3.2
+
+- add --enable-cors switch for local mode
+- change proof_of_work_threshold type to int64
+- fix rpc url parsing
+- fix for empty time config in zeronet
+
+## v5.3.1
+
+- update packdb to flush table metadata on journal flush
+
+## v5.3.0
+
+### CLI CHANGES
+- support url paths in `--rpcurl`
+
+### FIXES
+- fixed empty cycle response on zero supply
+- voting period start and end heights are no longer off by 1
+- voting quorum, ema and eligible rolls calculations are corrected
+- improved smart contract entrypoint detection so that annotated parent nodes in the parameter primitive tree are no longer shadowing valid entrypoints
+
+### NEW EXPLORER FEATURES
+- listing account ops supports `order`, `block` and `since` query arguments
+- extended op fields `paramaters`, `storage` and `big_map_diff` to include unboxed types and values and made prim tree optional
+- added new contract endpoints
+	- `/explorer/contract/{addr}/calls` to list smart contract calls
+	- `/explorer/contract/{addr}/manager` current manager account (originator in v005)
+	- `/explorer/contract/{addr}/script` code, storage &  parameter types
+	- `/explorer/contract/{addr}/storage` current storage state
+- added contract field `bigmap_ids` to list ids of bigmaps owned by this contract
+- added bigmap endpoints
+	- `/explorer/bigmap/{id}` bigmap metadata
+	- `/explorer/bigmap/{id}/type` bigmap type definition
+	- `/explorer/bigmap/{id}/keys` list bigmap keys
+	- `/explorer/bigmap/{id}/values` list bigmap key/value pairs
+	- `/explorer/bigmap/{id}/updates` list bigmap updates
+	- `/explorer/bigmap/{id}/{key}` single bigmap value
+	- `/explorer/bigmap/{id}/{key}/updates` list updates for a single bigmap value
+- add network health estimation based on recent 128 blocks (priority, endorsements, reorgs)
+
+### NEW TABLE FEATURES
+- added bigmap table `/tables/bigmap` to access raw bigmap updates
+
+### DEPRECATION NOTICES
+- removed deprecated [contract](#contracts) field `ops` and endpoint `/explorer/contract/{addr}/op` (use `/explorer/account/{addr}/op` endpoint instead)
+- removed deprecated [contract](#contracts) fields `delegate`, `manager`, `script` (use new endpoints or related account endpoints instead)
+
+
 ## v5.2.0
 
 ### CLI CHANGES

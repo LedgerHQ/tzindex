@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package server
 
@@ -201,7 +201,7 @@ func NewExplorerCycle(ctx *ApiContext, id int64) *ExplorerCycle {
 			// don't count endorsements for the current block
 			if b.Height != nowheight {
 				nEndorse := bits.OnesCount32(b.SlotsEndorsed)
-				ec.MissedEndorsements += 32 - nEndorse
+				ec.MissedEndorsements += p.EndorsersPerBlock - nEndorse
 				endorseStats.Add(int64(nEndorse))
 				if nEndorse < worstEndorsements {
 					worstEndorsements = nEndorse
@@ -339,7 +339,9 @@ func NewExplorerCycle(ctx *ApiContext, id int64) *ExplorerCycle {
 		}
 		if supply, err := ctx.Indexer.SupplyByHeight(ctx.Context, snapHeight); err == nil {
 			ec.StakingSupply = p.ConvertValue(supply.Staking)
-			ec.StakingPercent = float64(supply.Staking*100) / float64(supply.Total)
+			if supply.Total > 0 {
+				ec.StakingPercent = float64(supply.Staking*100) / float64(supply.Total)
+			}
 		}
 	}
 

@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package server
 
@@ -128,6 +128,8 @@ func StreamTable(ctx *ApiContext) (interface{}, int) {
 		return StreamBallotTable(ctx, args)
 	case "income":
 		return StreamIncomeTable(ctx, args)
+	case "bigmap":
+		return StreamBigMapItemTable(ctx, args)
 	default:
 		panic(ENotFound(EC_RESOURCE_NOTFOUND, fmt.Sprintf("no such table '%s'", args.Table), nil))
 		return nil, -1

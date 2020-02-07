@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package server
 
@@ -357,6 +357,7 @@ func ReadManagedAccounts(ctx *ApiContext) (interface{}, int) {
 func ReadAccountOps(ctx *ApiContext) (interface{}, int) {
 	args := &ExplorerOpsRequest{}
 	ctx.ParseRequestArgs(args)
+	args.ParseBlockIdent(ctx)
 	acc := loadAccount(ctx)
 	params := ctx.Crawler.ParamsByHeight(-1)
 	a := NewExplorerAccount(ctx, acc, params, false)
@@ -364,8 +365,8 @@ func ReadAccountOps(ctx *ApiContext) (interface{}, int) {
 		ctx,
 		acc.RowId,
 		args.Type,
-		0,
-		0,
+		args.SinceHeight,
+		args.BlockHeight,
 		args.Offset,
 		ctx.Cfg.ClampExplore(args.Limit),
 		args.Order,

@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package rpc
 
@@ -24,7 +24,7 @@ type Constants struct {
 	EndorsersPerBlock            int      `json:"endorsers_per_block"`
 	HardGasLimitPerOperation     int64    `json:"hard_gas_limit_per_operation,string"`
 	HardGasLimitPerBlock         int64    `json:"hard_gas_limit_per_block,string"`
-	ProofOfWorkThreshold         uint64   `json:"proof_of_work_threshold,string"`
+	ProofOfWorkThreshold         int64    `json:"proof_of_work_threshold,string"`
 	ProofOfWorkNonceSize         int      `json:"proof_of_work_nonce_size"`
 	TokensPerRoll                int64    `json:"tokens_per_roll,string"`
 	MichelsonMaximumTypeSize     int      `json:"michelson_maximum_type_size"`
@@ -57,7 +57,7 @@ type Constants struct {
 // https://tezos.gitlab.io/tezos/api/rpc.html#get-block-id-context-constants
 func (c *Client) GetConstants(ctx context.Context, blockID chain.BlockHash) (Constants, error) {
 	var con Constants
-	u := fmt.Sprintf("/chains/%s/blocks/%s/context/constants", c.ChainID, blockID)
+	u := fmt.Sprintf("chains/%s/blocks/%s/context/constants", c.ChainID, blockID)
 	if err := c.Get(ctx, u, &con); err != nil {
 		return con, err
 	}
@@ -68,7 +68,7 @@ func (c *Client) GetConstants(ctx context.Context, blockID chain.BlockHash) (Con
 // https://tezos.gitlab.io/tezos/api/rpc.html#get-block-id-context-constants
 func (c *Client) GetConstantsHeight(ctx context.Context, height int64) (Constants, error) {
 	var con Constants
-	u := fmt.Sprintf("/chains/%s/blocks/%d/context/constants", c.ChainID, height)
+	u := fmt.Sprintf("chains/%s/blocks/%d/context/constants", c.ChainID, height)
 	if err := c.Get(ctx, u, &con); err != nil {
 		return con, err
 	}

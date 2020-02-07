@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package micheline
 
@@ -21,6 +21,52 @@ func (p Parameters) MarshalJSON() ([]byte, error) {
 	}
 	type alias Parameters
 	return json.Marshal(alias(p))
+}
+
+// follow branch down to a known entrypoint
+func (p Parameters) Branch(ep Entrypoints) string {
+	node := p.Value
+	if node == nil {
+		return ""
+	}
+	var branch string
+done:
+	for {
+		switch node.OpCode {
+		case D_LEFT:
+			branch += "L"
+		case D_RIGHT:
+			branch += "R"
+		default:
+			break done
+		}
+		node = node.Args[0]
+		if _, ok := ep.FindBranch(branch); ok {
+			break done
+		}
+	}
+	return branch
+}
+
+// unwrap down to a known entrypoint
+func (p Parameters) Unwrap(ep Entrypoints) *Prim {
+	var branch string
+	for node := p.Value; node != nil; {
+		switch node.OpCode {
+		case D_LEFT:
+			branch = branch + "L"
+			node = node.Args[0]
+		case D_RIGHT:
+			branch = branch + "R"
+			node = node.Args[0]
+		default:
+			return node
+		}
+		if _, ok := ep.FindBranch(branch); ok {
+			return node
+		}
+	}
+	return nil
 }
 
 // stay compatible with v005 transaction serialization

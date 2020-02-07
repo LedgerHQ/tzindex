@@ -1,5 +1,5 @@
-// Copyright (c) 2019 KIDTSUNAMI
-// Author: alex@kidtsunami.com
+// Copyright (c) 2020 Blockwatch Data Inc.
+// Author: alex@blockwatch.cc
 
 package micheline
 
@@ -31,6 +31,10 @@ func NewScript() *Script {
 		},
 		Storage: &Prim{},
 	}
+}
+
+func (s *Script) StorageType() BigMapType {
+	return BigMapType(*s.Code.Storage.Args[0])
 }
 
 func (c Code) MarshalJSON() ([]byte, error) {
