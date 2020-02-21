@@ -33,7 +33,7 @@ var (
 )
 
 func init() {
-	runCmd.Flags().StringVar(&rpcurl, "rpcurl", "http://127.0.0.1:8732", "RPC url")
+	runCmd.Flags().StringVar(&rpcurl, "rpcurl", "", "RPC url")
 	runCmd.Flags().StringVar(&rpcuser, "rpcuser", "", "RPC username")
 	runCmd.Flags().StringVar(&rpcpass, "rpcpass", "", "RPC password")
 	runCmd.Flags().BoolVar(&norpc, "norpc", false, "disable RPC client")
