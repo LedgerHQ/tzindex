@@ -136,6 +136,11 @@ type contract struct {
 }
 
 func (b *bootstrap) DecodeContracts() ([]*X1, error) {
+	// ignore non-mainnet contract lists (we don't know their addresses)
+	if len(b.Contracts) != len(vestingContractAddrs) {
+		log.Warnf("ignoring genesis contracts")
+		return nil, nil
+	}
 	c := make([]*X1, len(b.Contracts))
 	for i, v := range b.Contracts {
 		c[i] = &X1{
@@ -159,6 +164,31 @@ func (b *bootstrap) DecodeContracts() ([]*X1, error) {
 		}
 		if err := json.Unmarshal(buf, &c[i].Script); err != nil {
 			return nil, err
+		}
+
+		// skip when this does not look like a vesting contract
+		isVesting := true
+		switch true {
+		case c[i].Script.Storage == nil:
+			isVesting = false
+		case len(c[i].Script.Storage.Args) == 0:
+			isVesting = false
+		case c[i].Script.Storage.Args[0] == nil:
+			isVesting = false
+		case len(c[i].Script.Storage.Args[0].Args) == 0:
+			isVesting = false
+		case c[i].Script.Storage.Args[0].Args[1] == nil:
+			isVesting = false
+		case len(c[i].Script.Storage.Args[0].Args[1].Args) == 0:
+			isVesting = false
+		case c[i].Script.Storage.Args[0].Args[1].Args[0] == nil:
+			isVesting = false
+		case len(c[i].Script.Storage.Args[0].Args[1].Args[0].Args) == 0:
+			isVesting = false
+		}
+
+		if !isVesting {
+			continue
 		}
 
 		// patch initial storage (convert strings to bytes) to circumvent tezos
