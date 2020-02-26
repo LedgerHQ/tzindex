@@ -468,6 +468,7 @@ func (t ExplorerOp) RegisterDirectRoutes(r *mux.Router) error {
 
 func (t ExplorerOp) RegisterRoutes(r *mux.Router) error {
 	r.HandleFunc("/ledger_delegation", C(ReadLedgerDelegation)).Methods("GET").Name("op")
+	r.HandleFunc("/flows", C(ReadAccountFlows)).Methods("GET").Name("op")
 	r.HandleFunc("/{ident}", C(ReadOp)).Methods("GET").Name("op")
 	return nil
 
@@ -570,6 +571,30 @@ func ReadOp(ctx *ApiContext) (interface{}, int) {
 type LedgerDelegationListRequest struct {
 	Before  time.Time `schema:"before"`
 	After time.Time `schema:"after"`
+}
+
+func ReadAccountFlows(ctx *ApiContext) (interface{}, int) {
+	type AccountFlowRequest struct {
+		Address string `schema:"addr"`
+	}
+	var args AccountFlowRequest
+	ctx.ParseRequestArgs(&args)
+	addr := chain.MustParseAddress(args.Address)
+	account, err := ctx.Indexer.LookupAccount(ctx, addr)
+	log.Infof("balance %d", account.Balance())
+	if err != nil {
+		switch err {
+		case index.ErrNoAccountEntry:
+			panic(ENotFound(EC_RESOURCE_NOTFOUND, "no such account", err))
+		default:
+			panic(EInternal(EC_DATABASE, err.Error(), nil))
+		}
+	}
+	flows, err := ctx.Indexer.LookupFlows(ctx, *account)
+	if err != nil {
+		panic(err)
+	}
+	return flows, http.StatusOK
 }
 
 func ReadLedgerDelegation(ctx *ApiContext) (interface{}, int) {
