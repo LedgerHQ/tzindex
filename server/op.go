@@ -573,6 +573,10 @@ type LedgerDelegationListRequest struct {
 }
 
 func ReadLedgerDelegation(ctx *ApiContext) (interface{}, int) {
+	type LedgerDelegation struct {
+		*ExplorerOp
+		SenderBalance int64 `json:"sender_balance"`
+	}
 	args := &LedgerDelegationListRequest{
 		Before: time.Now(),
 		After: time.Now().AddDate(0, 0, -1),
@@ -588,14 +592,23 @@ func ReadLedgerDelegation(ctx *ApiContext) (interface{}, int) {
 			panic(EInternal(EC_DATABASE, err.Error(), nil))
 		}
 	}
-	resp := make(ExplorerOpList, 0)
+	resp := make([]*LedgerDelegation, 0)
 	var params *chain.Params
 	for _, v := range ops {
 		if params == nil {
 			params = ctx.Crawler.ParamsByHeight(v.Height)
 		}
 		if v.GasLimit%1000 == ctx.Cfg.Ledger.DelegationGasLimit {
-			resp = append(resp, NewExplorerOp(ctx, v, nil, nil, params, nil))
+			balance, err := ctx.Indexer.LookupBalance(ctx, v.SenderId, v.Timestamp)
+			if err != nil {
+				panic(EInternal(EC_DATABASE, err.Error(), nil))
+			}
+			explorerOp := NewExplorerOp(ctx, v, nil, nil, params, nil)
+			ledgerDelegation := LedgerDelegation{
+				explorerOp,
+				balance,
+			}
+			resp = append(resp, &ledgerDelegation)
 		} else {
 			v.Free()
 		}

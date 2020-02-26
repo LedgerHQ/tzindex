@@ -1006,6 +1006,95 @@ func (m *Indexer) LookupDelegation(ctx context.Context, after, before time.Time)
 	return ops, nil
 }
 
+func (m *Indexer) LookupBalance(ctx context.Context, accountId model.AccountID, at time.Time) (int64, error) {
+	account, err := m.LookupAccountId(ctx, accountId)
+	if err != nil {
+		return 0, err
+	}
+	table, err := m.Table(index.FlowTableKey)
+	if err != nil {
+		return 0, err
+	}
+	q := pack.Query{
+		Name: "api.query_account_flow",
+		NoCache: true,
+		Conditions: pack.ConditionList{
+			pack.Condition{
+				Field: table.Fields().Find("T"),
+				Mode: pack.FilterModeGte,
+				Value: at,
+			},
+			pack.Condition{
+				Field: table.Fields().Find("A"),
+				Mode: pack.FilterModeEqual,
+				Value: account.ID(),
+			},
+		},
+	}
+	balance := account.Balance()
+	err = table.Stream(ctx, q, func(r pack.Row) error {
+		var flow model.Flow
+		if err := r.Decode(&flow); err != nil {
+			flow.Free()
+			return err
+		}
+		balance += flow.AmountOut
+		balance += flow.AmountIn
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return balance, nil
+}
+
+func (m *Indexer) LookupDelegationFlow(ctx context.Context, op model.Op) ([]*model.Flow, error) {
+	table, err := m.Table(index.FlowTableKey)
+	if err != nil {
+		return nil, err
+	}
+	q := pack.Query{
+		Name: "api.query_delegation_flow",
+		NoCache: true,
+		Conditions: pack.ConditionList{
+			pack.Condition{
+				Field: table.Fields().Find("h"),
+				Mode: pack.FilterModeEqual,
+				Value: op.Height,
+			},
+			pack.Condition{
+				Field: table.Fields().Find("A"),
+				Mode: pack.FilterModeEqual,
+				Value: op.DelegateId.Value(),
+			},
+			pack.Condition{
+				Field: table.Fields().Find("O"),
+				Mode: pack.FilterModeEqual,
+				Value: int64(model.FlowTypeDelegation),
+			},
+			// pack.Condition{
+			// 	Field: table.Fields().Find("e"),
+			// 	Mode: pack.FilterModeEqual,
+			// 	Value: false,
+			// },
+		},
+	}
+	flows := make([]*model.Flow, 0)
+	err = table.Stream(ctx, q, func(r pack.Row) error {
+		var flow model.Flow
+		if err := r.Decode(&flow); err != nil {
+			flow.Free()
+			return err
+		}
+		flows = append(flows, &flow)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return flows, nil
+}
+
 func (m *Indexer) FindActivatedAccount(ctx context.Context, addr chain.Address) (*model.Account, error) {
 	table, err := m.Table(index.OpTableKey)
 	if err != nil {

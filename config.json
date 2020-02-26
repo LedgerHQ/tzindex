@@ -1,0 +1,101 @@
+{
+    "crawler": {
+        "queue": 100,
+        "snapshot_blocks": [],
+        "snapshot_interval": 0,
+        "snapshot_path": "./db/xtz/snapshots"
+    },
+    "database": {
+        "account": {
+            "cache_size": 4
+        },
+        "account_index": {
+            "cache_size": 8
+        },
+        "block": {
+            "cache_size": 8
+        },
+        "block_index": {
+            "cache_size": 64
+        },
+        "chain": {
+            "cache_size": 2
+        },
+        "contract": {
+            "cache_size": 2
+        },
+        "contract_index": {
+            "cache_size": 2
+        },
+        "engine": "bolt",
+        "flow": {
+            "cache_size": 4
+        },
+        "gc_interval": 50000000,
+        "gc_ratio": 1.0,
+        "income": {
+            "cache_size": 2
+        },
+        "log_slow_queries": "2s",
+        "op": {
+            "cache_size": 4
+        },
+        "op_index": {
+            "cache_size": 128
+        },
+        "path": "./db/xtz",
+        "right": {
+            "cache_size": 2
+        },
+        "supply": {
+            "cache_size": 2
+        }
+    },
+    "logging": {
+        "backend": "stdout",
+        "blockchain": "info",
+        "database": "info",
+        "flags": "date,time,micro,utc",
+        "level": "info",
+        "micheline": "info",
+        "report": "info",
+        "rpc": "info",
+        "server": "debug"
+    },
+    "rpc": {
+        "continue_timeout": "60s",
+        "dial_timeout": "10s",
+        "disable_tls": true,
+        "host": "xtz.explorers.sandbox.aws.ledger.fr",
+        "idle_conns": 2,
+        "idle_timeout": "30m",
+        "keepalive": "30m",
+        "port": 80,
+        "response_timeout": "60s",
+        "threads": 2
+    },
+    "server": {
+        "addr": "0.0.0.0",
+        "cache_control": "public",
+        "cache_enable": false,
+        "cors_allow_headers": "Authorization, Accept, Content-Type, X-Api-Key, X-Requested-With",
+        "cors_credentials": "true",
+        "cors_enable": false,
+        "cors_expose_headers": "Date, X-Runtime, X-Request-Id, X-Api-Version",
+        "cors_maxage": "86400",
+        "cors_methods": "GET, OPTIONS",
+        "cors_origin": "*",
+        "default_explore_count": 20,
+        "header_timeout": "5s",
+        "host": "127.0.0.1",
+        "keepalive": "90s",
+        "max_explore_count": 100,
+        "max_list_count": 50000,
+        "port": 8210,
+        "read_timeout": "2s",
+        "scheme": "http",
+        "shutdown_timeout": "15s",
+        "workers": 50,
+        "write_timeout": "900s"
+    }
+}
