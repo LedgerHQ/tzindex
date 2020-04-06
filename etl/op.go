@@ -606,7 +606,7 @@ func (b *Builder) NewTransactionOp(ctx context.Context, oh *rpc.OperationHeader,
 	op.Fee = top.Fee
 	op.GasLimit = top.GasLimit
 	op.StorageLimit = top.StorageLimit
-	op.IsContract = dst.IsContract || top.Parameters != nil
+	op.IsContract = dst.IsContract
 	res := top.Metadata.Result
 	op.Status = res.Status
 	op.IsSuccess = op.Status.IsSuccess()
@@ -819,7 +819,7 @@ func (b *Builder) NewInternalTransactionOp(ctx context.Context, origsrc, origdlg
 	op.Fee = 0          // n.a. for internal ops
 	op.GasLimit = 0     // n.a. for internal ops
 	op.StorageLimit = 0 // n.a. for internal ops
-	op.IsContract = dst.IsContract || iop.Parameters != nil
+	op.IsContract = dst.IsContract
 	res := iop.Result
 	op.Status = res.Status
 	op.IsSuccess = op.Status.IsSuccess()
@@ -1213,11 +1213,11 @@ func (b *Builder) NewInternalOriginationOp(ctx context.Context, origsrc, origdlg
 	op.Type = chain.OpTypeOrigination
 	op.SenderId = src.RowId
 	op.Counter = iop.Nonce
-	op.Fee = 0           // n.a. for internal ops
-	op.GasLimit = 0      // n.a. for internal ops
-	op.StorageLimit = 0  // n.a. for internal ops
-	op.IsContract = true // meaning: the outer op interacted with a smart contract
-	res := iop.Result    // same as transaction result
+	op.Fee = 0          // n.a. for internal ops
+	op.GasLimit = 0     // n.a. for internal ops
+	op.StorageLimit = 0 // n.a. for internal ops
+	op.IsContract = iop.Script != nil
+	res := iop.Result // same as transaction result
 	op.Status = res.Status
 	op.GasUsed = res.ConsumedGas
 	op.IsSuccess = op.Status.IsSuccess()
@@ -1497,29 +1497,29 @@ func (b *Builder) NewDelegationOp(ctx context.Context, oh *rpc.OperationHeader, 
 
 			// find previous delegate, if any
 			var lastsince int64
-			if op, err := b.idx.FindLatestDelegation(ctx, src.RowId); err != nil {
+			if prevop, err := b.idx.FindLatestDelegation(ctx, src.RowId); err != nil {
 				if err != index.ErrNoOpEntry {
 					return err
 				}
 				odlg = nil
-			} else {
-				lastsince = op.Height
-				odlg, ok = b.AccountById(op.ReceiverId)
+			} else if prevop.DelegateId > 0 {
+				lastsince = prevop.Height
+				odlg, ok = b.AccountById(prevop.DelegateId)
 				if !ok {
-					return fmt.Errorf("delegation rollback [%d:%d]: missing delegate id %d", op_n, op_c, op.ReceiverId)
+					return fmt.Errorf("delegation rollback [%d:%d]: missing previous delegate id %d", op_n, op_c, prevop.DelegateId)
 				}
 			}
 			if odlg == nil {
 				// we must also look for the sources' origination op that may have
 				// set the initial delegate
-				if op, err := b.idx.FindOrigination(ctx, src.RowId); err != nil {
+				if prevop, err := b.idx.FindOrigination(ctx, src.RowId); err != nil {
 					if err != index.ErrNoOpEntry {
 						return err
 					}
-				} else if op.DelegateId != 0 {
-					odlg, ok = b.AccountById(op.DelegateId)
+				} else if prevop.DelegateId != 0 {
+					odlg, ok = b.AccountById(prevop.DelegateId)
 					if !ok {
-						return fmt.Errorf("delegation rollback [%d:%d]: missing origin delegate %s", op_n, op_c, op.DelegateId)
+						return fmt.Errorf("delegation rollback [%d:%d]: missing origin delegate %s", op_n, op_c, prevop.DelegateId)
 					}
 				}
 			}
@@ -1583,10 +1583,9 @@ func (b *Builder) NewInternalDelegationOp(ctx context.Context, origsrc, origdlg 
 		op.DelegateId = ndlg.RowId
 	}
 	op.Counter = iop.Nonce
-	op.Fee = 0           // n.a. for internal ops
-	op.GasLimit = 0      // n.a. for internal ops
-	op.StorageLimit = 0  // n.a. for internal ops
-	op.IsContract = true // meaning: the outer op interacted with a smart contract
+	op.Fee = 0          // n.a. for internal ops
+	op.GasLimit = 0     // n.a. for internal ops
+	op.StorageLimit = 0 // n.a. for internal ops
 	res := iop.Result
 	op.Status = res.Status
 	op.GasUsed = res.ConsumedGas
@@ -1679,29 +1678,29 @@ func (b *Builder) NewInternalDelegationOp(ctx context.Context, origsrc, origdlg 
 
 			// find previous delegate, if any
 			var lastsince int64
-			if op, err := b.idx.FindLatestDelegation(ctx, src.RowId); err != nil {
+			if prevop, err := b.idx.FindLatestDelegation(ctx, src.RowId); err != nil {
 				if err != index.ErrNoOpEntry {
 					return err
 				}
 				odlg = nil
-			} else {
-				lastsince = op.Height
-				odlg, ok = b.AccountById(op.ReceiverId)
+			} else if prevop.DelegateId > 0 {
+				lastsince = prevop.Height
+				odlg, ok = b.AccountById(prevop.DelegateId)
 				if !ok {
-					return fmt.Errorf("delegation rollback [%d:%d]: missing delegate id %d", op_n, op_c, op.ReceiverId)
+					return fmt.Errorf("delegation rollback [%d:%d]: missing previous delegate id %d", op_n, op_c, prevop.DelegateId)
 				}
 			}
 			if odlg == nil {
 				// we must also look for the sources' origination op that may have
 				// set the initial delegate
-				if op, err := b.idx.FindOrigination(ctx, src.RowId); err != nil {
+				if prevop, err := b.idx.FindOrigination(ctx, src.RowId); err != nil {
 					if err != index.ErrNoOpEntry {
 						return err
 					}
-				} else if op.DelegateId != 0 {
-					odlg, ok = b.AccountById(op.DelegateId)
+				} else if prevop.DelegateId != 0 {
+					odlg, ok = b.AccountById(prevop.DelegateId)
 					if !ok {
-						return fmt.Errorf("delegation rollback [%d:%d]: missing origin delegate %s", op_n, op_c, op.DelegateId)
+						return fmt.Errorf("delegation rollback [%d:%d]: missing origin delegate %s", op_n, op_c, prevop.DelegateId)
 					}
 				}
 			}
