@@ -296,6 +296,7 @@ func (b ExplorerAccount) RegisterRoutes(r *mux.Router) error {
 	r.HandleFunc("/{ident}/managed", C(ReadManagedAccounts)).Methods("GET")
 	r.HandleFunc("/{ident}/op", C(ReadAccountOps)).Methods("GET")
 	r.HandleFunc("/{ident}/ballots", C(ReadAccountBallots)).Methods("GET")
+	r.HandleFunc("/{ident}/balance", C(ReadAccountBalance)).Methods("GET").Name("account")
 	return nil
 
 }
@@ -436,4 +437,19 @@ func ReadAccountBallots(ctx *ApiContext) (interface{}, int) {
 	}
 	a.Ballots = &ebs
 	return a, http.StatusOK
+}
+
+type timeRangeRequest struct {
+	At time.Time `schema:"at"`
+}
+
+func ReadAccountBalance(ctx *ApiContext) (interface{}, int) {
+	args := &timeRangeRequest{}
+	ctx.ParseRequestArgs(args)
+	acc := loadAccount(ctx)
+	balance, err := ctx.Indexer.LookupBalance(ctx, acc.RowId, args.At)
+	if err != nil {
+		panic(EInternal(EC_DATABASE, err.Error(), nil))
+	}
+	return balance, http.StatusOK
 }

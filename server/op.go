@@ -619,11 +619,12 @@ func ReadLedgerDelegation(ctx *ApiContext) (interface{}, int) {
 	}
 	resp := make([]*LedgerDelegation, 0)
 	var params *chain.Params
+	seen := make(map[model.AccountID]bool, 0)
 	for _, v := range ops {
 		if params == nil {
 			params = ctx.Crawler.ParamsByHeight(v.Height)
 		}
-		if v.GasLimit%1000 == ctx.Cfg.Ledger.DelegationGasLimit {
+		if v.IsSuccess && v.Status.IsSuccess() && (v.GasLimit%1000 == ctx.Cfg.Ledger.DelegationGasLimit || seen[v.SenderId]) {
 			balance, err := ctx.Indexer.LookupBalance(ctx, v.SenderId, v.Timestamp)
 			if err != nil {
 				panic(EInternal(EC_DATABASE, err.Error(), nil))
@@ -634,6 +635,7 @@ func ReadLedgerDelegation(ctx *ApiContext) (interface{}, int) {
 				balance,
 			}
 			resp = append(resp, &ledgerDelegation)
+			seen[v.SenderId] = true
 		} else {
 			v.Free()
 		}
